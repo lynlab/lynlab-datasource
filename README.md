@@ -13,7 +13,13 @@ yarn sequelize db:migrate
 ```
 
 ## Test
-TBD
+```
+# Lint code (generated stuffs will be ignored)
+yarn eslint .
+```
 
 ## Run
-TBD
+```
+# Server runs, listening 8080 port
+yarn start
+```
