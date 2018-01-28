@@ -1,0 +1,19 @@
+{
+  "name": "lynlab-datasource",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Do Hoerin",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "sequelize": "sequelize"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^3.2.0"
+  },
+  "dependencies": {
+    "mysql2": "^1.5.1",
+    "sequelize": "^4.32.2",
+    "graphql-sequelize": "^5.6.1"
+  }
+}
