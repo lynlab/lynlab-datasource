@@ -1,0 +1,33 @@
+language: node_js
+node_js:
+  - "8"
+
+sudo: required
+
+services:
+  - docker
+
+cache:
+  yarn: true
+
+install:
+  - yarn
+
+script:
+  - yarn lint .
+
+after_success:
+  # tag branch name.
+  # Push only for push integrations, not pull request.
+  - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
+      docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+
+      docker build -t lynlab/datasource:${TRAVIS_BRANCH} .;
+      docker push lynlab/datasource:${TRAVIS_BRANCH};
+
+      if [ "${TRAVIS_BRANCH}" == "master" ]; then
+        docker build -t lynlab/datasource:latest .;
+        docker push lynlab/datasource:latest;
+      fi
+    fi
+  
