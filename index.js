@@ -12,8 +12,20 @@ const {
 } = require('graphql');
 const { GraphQLDateTime } = require('graphql-iso-date');
 
-const { Post } = require('./models');
+const { Post, PostCategory } = require('./models');
 
+
+// Type definitions.
+const postCategoryType = new GraphQLObjectType({
+  name: 'PostCategory',
+  description: 'A category of posts',
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLInt) },
+    name: { type: GraphQLString },
+    createdAt: { type: GraphQLDateTime },
+    updatedAt: { type: GraphQLDateTime },
+  },
+});
 
 const postType = new GraphQLObjectType({
   name: 'Post',
@@ -21,7 +33,12 @@ const postType = new GraphQLObjectType({
   fields: {
     id: { type: new GraphQLNonNull(GraphQLInt) },
     title: { type: GraphQLString },
+    summary: { type: GraphQLString },
     body: { type: GraphQLString },
+    postCategory: {
+      type: postCategoryType,
+      resolve: post => PostCategory.findOne({ where: { id: post.postCategoryId } }),
+    },
     createdAt: { type: GraphQLDateTime },
     updatedAt: { type: GraphQLDateTime },
   },

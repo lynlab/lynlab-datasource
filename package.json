@@ -5,7 +5,7 @@
   "author": "Do Hoerin",
   "private": true,
   "scripts": {
-    "eslint": "eslint",
+    "lint": "eslint",
     "sequelize": "sequelize",
     "start": "node index.js"
   },

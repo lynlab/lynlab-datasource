@@ -1,14 +1,15 @@
-'use strict';
 module.exports = (sequelize, DataTypes) => {
-  var Post = sequelize.define('Post', {
+  const Post = sequelize.define('Post', {
     title: DataTypes.STRING,
-    body: DataTypes.TEXT
+    summary: DataTypes.TEXT,
+    body: DataTypes.TEXT,
+    postCategoryId: DataTypes.INTEGER,
   }, {
     classMethods: {
-      associate: function(models) {
-        // associations can be defined here
-      }
-    }
+      associate(models) {
+        Post.belongsTo(models.PostCategory);
+      },
+    },
   });
   return Post;
 };
