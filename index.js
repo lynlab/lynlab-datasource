@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const graphqlHTTP = require('express-graphql');
 
 const { resolver } = require('graphql-sequelize');
@@ -88,7 +89,7 @@ const schema = new GraphQLSchema({
 });
 
 const app = express();
-app.use('/graphql', graphqlHTTP({
+app.use('/graphql', cors(), graphqlHTTP({
   schema,
   graphiql: (process.env.NODE_ENV === 'development'),
 }));
