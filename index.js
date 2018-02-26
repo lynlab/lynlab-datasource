@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const graphqlHTTP = require('express-graphql');
 
@@ -13,7 +14,7 @@ const {
 } = require('graphql');
 const { GraphQLDateTime } = require('graphql-iso-date');
 
-const { Post, PostCategory } = require('./models');
+const { Post, PostCategory, PostSeries } = require('./models');
 
 
 // Type definitions.
@@ -23,8 +24,15 @@ const postCategoryType = new GraphQLObjectType({
   fields: {
     id: { type: new GraphQLNonNull(GraphQLInt) },
     name: { type: GraphQLString },
-    createdAt: { type: GraphQLDateTime },
-    updatedAt: { type: GraphQLDateTime },
+  },
+});
+
+const postSeriesType = new GraphQLObjectType({
+  name: 'PostSeries',
+  description: 'A series of posts',
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLInt) },
+    name: { type: GraphQLString },
   },
 });
 
@@ -40,9 +48,20 @@ const postType = new GraphQLObjectType({
       type: postCategoryType,
       resolve: post => PostCategory.findOne({ where: { id: post.postCategoryId } }),
     },
+    postSeries: {
+      type: postSeriesType,
+      resolve: post => PostSeries.findOne({ where: { id: post.postSeriesId } }),
+    },
+    hitCount: { type: GraphQLInt },
     createdAt: { type: GraphQLDateTime },
     updatedAt: { type: GraphQLDateTime },
   },
+});
+
+const mutationResultType = new GraphQLObjectType({
+  name: 'MutationResult',
+  description: 'A result of mutation',
+  fields: { result: { type: GraphQLString } },
 });
 
 
@@ -86,10 +105,28 @@ const schema = new GraphQLSchema({
       },
     },
   }),
+  mutation: new GraphQLObjectType({
+    name: 'RootMutationType',
+    fields: {
+      addPostHitCount: {
+        type: mutationResultType,
+        args: { postId: { type: new GraphQLNonNull(GraphQLInt) } },
+        resolve: (_, args) => {
+          Post.findOne({ where: { id: args.postId } }).then((post) => {
+            post.hitCount += 1;
+            post.save();
+          });
+          return { result: 'success' };
+        },
+      },
+    },
+  }),
 });
 
 const app = express();
-app.use('/graphql', cors(), graphqlHTTP({
+app.use(compression());
+app.use(cors());
+app.use('/graphql', graphqlHTTP({
   schema,
   graphiql: (process.env.NODE_ENV === 'development'),
 }));
