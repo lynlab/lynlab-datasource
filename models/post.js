@@ -3,8 +3,9 @@ module.exports = (sequelize, DataTypes) => {
     title: DataTypes.STRING,
     summary: DataTypes.TEXT,
     body: DataTypes.TEXT,
+    preview: DataTypes.TEXT,
     postCategoryId: DataTypes.INTEGER,
-    PostSeriesId: DataTypes.INTEGER,
+    postSeriesId: DataTypes.INTEGER,
     hitCount: DataTypes.INTEGER,
   }, {
     classMethods: {

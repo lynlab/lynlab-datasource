@@ -44,6 +44,7 @@ const postType = new GraphQLObjectType({
     title: { type: GraphQLString },
     summary: { type: GraphQLString },
     body: { type: GraphQLString },
+    preview: { type: GraphQLString },
     postCategory: {
       type: postCategoryType,
       resolve: post => PostCategory.findOne({ where: { id: post.postCategoryId } }),
@@ -68,16 +69,16 @@ const mutationResultType = new GraphQLObjectType({
 // Resolver with pagination.
 function paginationResolver(model, root, {
   after, before, first, last,
-}) {
-  const where = {};
+}, where) {
+  const pagedWhere = where || {};
   if (before) {
-    where.id = { $lt: before.toString() };
+    pagedWhere.id = { $lt: before.toString() };
   }
   if (after) {
-    where.id = { $gt: after.toString() };
+    pagedWhere.id = { $gt: after.toString() };
   }
 
-  return model.findAll({ where, order: [['id', 'desc']], limit: last || first });
+  return model.findAll({ where: pagedWhere, order: [['id', 'desc']], limit: last || first });
 }
 
 
@@ -91,8 +92,20 @@ const schema = new GraphQLSchema({
         args: {
           before: { type: GraphQLInt },
           last: { type: GraphQLInt },
+          postCategoryId: { type: GraphQLInt },
+          postSeriesId: { type: GraphQLInt },
         },
-        resolve: (_, args) => paginationResolver(Post, _, args),
+        resolve: (_, args) => {
+          const where = {};
+          if (args.postCategoryId) {
+            where.postCategoryId = { $eq: args.postCategoryId };
+          }
+          if (args.postSeriesId) {
+            where.postSeriesId = { $eq: args.postSeriesId };
+          }
+
+          return paginationResolver(Post, _, args, where);
+        },
       },
 
       // Single post
@@ -113,6 +126,7 @@ const schema = new GraphQLSchema({
         args: { postId: { type: new GraphQLNonNull(GraphQLInt) } },
         resolve: (_, args) => {
           Post.findOne({ where: { id: args.postId } }).then((post) => {
+            // eslint-disable-next-line
             post.hitCount += 1;
             post.save();
           });
