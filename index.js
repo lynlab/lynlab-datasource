@@ -1,4 +1,6 @@
 const express = require('express');
+const compression = require('compression');
+const cors = require('cors');
 const graphqlHTTP = require('express-graphql');
 
 const { resolver } = require('graphql-sequelize');
@@ -12,7 +14,7 @@ const {
 } = require('graphql');
 const { GraphQLDateTime } = require('graphql-iso-date');
 
-const { Post, PostCategory } = require('./models');
+const { Post, PostCategory, PostSeries } = require('./models');
 
 
 // Type definitions.
@@ -22,8 +24,15 @@ const postCategoryType = new GraphQLObjectType({
   fields: {
     id: { type: new GraphQLNonNull(GraphQLInt) },
     name: { type: GraphQLString },
-    createdAt: { type: GraphQLDateTime },
-    updatedAt: { type: GraphQLDateTime },
+  },
+});
+
+const postSeriesType = new GraphQLObjectType({
+  name: 'PostSeries',
+  description: 'A series of posts',
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLInt) },
+    name: { type: GraphQLString },
   },
 });
 
@@ -35,29 +44,41 @@ const postType = new GraphQLObjectType({
     title: { type: GraphQLString },
     summary: { type: GraphQLString },
     body: { type: GraphQLString },
+    preview: { type: GraphQLString },
     postCategory: {
       type: postCategoryType,
       resolve: post => PostCategory.findOne({ where: { id: post.postCategoryId } }),
     },
+    postSeries: {
+      type: postSeriesType,
+      resolve: post => PostSeries.findOne({ where: { id: post.postSeriesId } }),
+    },
+    hitCount: { type: GraphQLInt },
     createdAt: { type: GraphQLDateTime },
     updatedAt: { type: GraphQLDateTime },
   },
+});
+
+const mutationResultType = new GraphQLObjectType({
+  name: 'MutationResult',
+  description: 'A result of mutation',
+  fields: { result: { type: GraphQLString } },
 });
 
 
 // Resolver with pagination.
 function paginationResolver(model, root, {
   after, before, first, last,
-}) {
-  const where = {};
+}, where) {
+  const pagedWhere = where || {};
   if (before) {
-    where.id = { $lt: before.toString() };
+    pagedWhere.id = { $lt: before.toString() };
   }
   if (after) {
-    where.id = { $gt: after.toString() };
+    pagedWhere.id = { $gt: after.toString() };
   }
 
-  return model.findAll({ where, order: [['id', 'desc']], limit: last || first });
+  return model.findAll({ where: pagedWhere, order: [['id', 'desc']], limit: last || first });
 }
 
 
@@ -71,8 +92,20 @@ const schema = new GraphQLSchema({
         args: {
           before: { type: GraphQLInt },
           last: { type: GraphQLInt },
+          postCategoryId: { type: GraphQLInt },
+          postSeriesId: { type: GraphQLInt },
         },
-        resolve: (_, args) => paginationResolver(Post, _, args),
+        resolve: (_, args) => {
+          const where = {};
+          if (args.postCategoryId) {
+            where.postCategoryId = { $eq: args.postCategoryId };
+          }
+          if (args.postSeriesId) {
+            where.postSeriesId = { $eq: args.postSeriesId };
+          }
+
+          return paginationResolver(Post, _, args, where);
+        },
       },
 
       // Single post
@@ -85,9 +118,28 @@ const schema = new GraphQLSchema({
       },
     },
   }),
+  mutation: new GraphQLObjectType({
+    name: 'RootMutationType',
+    fields: {
+      addPostHitCount: {
+        type: mutationResultType,
+        args: { postId: { type: new GraphQLNonNull(GraphQLInt) } },
+        resolve: (_, args) => {
+          Post.findOne({ where: { id: args.postId } }).then((post) => {
+            // eslint-disable-next-line
+            post.hitCount += 1;
+            post.save();
+          });
+          return { result: 'success' };
+        },
+      },
+    },
+  }),
 });
 
 const app = express();
+app.use(compression());
+app.use(cors());
 app.use('/graphql', graphqlHTTP({
   schema,
   graphiql: (process.env.NODE_ENV === 'development'),
