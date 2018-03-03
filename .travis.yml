@@ -22,12 +22,17 @@ after_success:
   - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
       docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
 
-      docker build -t lynlab/datasource:${TRAVIS_BRANCH} .;
-      docker push lynlab/datasource:${TRAVIS_BRANCH};
+      docker build -t lynlab/datasource:${TRAVIS_BRANCH} .
+      docker push lynlab/datasource:${TRAVIS_BRANCH}
 
       if [ "${TRAVIS_BRANCH}" == "master" ]; then
-        docker build -t lynlab/datasource:latest .;
-        docker push lynlab/datasource:latest;
+        docker build -t lynlab/datasource:latest .
+        docker push lynlab/datasource:latest
+      fi
+
+      if [ -n "${TRAVIS_TAG}" ]; then
+        docker build -t lynlab/datasource:${TRAVIS_TAG} .
+        docker push lynlab/datasource:${TRAVIS_TAG}
       fi
     fi
   
